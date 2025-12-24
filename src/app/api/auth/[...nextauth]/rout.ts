@@ -1,10 +1,10 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User";
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -22,7 +22,7 @@ export const authOptions = {
 
         const user = await UserModel.findOne({
           $or: [{ email: identifier }, { username: identifier }],
-        });
+        }).lean();
 
         if (!user) throw new Error("User not found");
         if (!user.isVerified) throw new Error("Please verify your email first");
@@ -32,7 +32,7 @@ export const authOptions = {
 
         return {
           id: user._id.toString(),
-          username: user.username,
+          name: user.username, // NextAuth expects "name"
           email: user.email,
         };
       },
@@ -41,16 +41,19 @@ export const authOptions = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }) {
+      // user only exists on first login
       if (user) {
-        token.id = user.id;
-        token.username = user.username;
+        token.id = (user as any).id;
+        token.username = user.name;
       }
       return token;
     },
-    async session({ session, token }: any) {
-      session.user.id = token.id;
-      session.user.username = token.username;
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as any).id = token.id as string;
+        (session.user as any).username = token.username as string;
+      }
       return session;
     },
   },
