@@ -1,12 +1,12 @@
-import { Resend } from "resend";
+import { resend } from "@/lib/resend";
 
 export default async function sendVerificationEmail(
   email: string,
   username: string,
   verifyCode: string
 ) {
-  return Resend.emails.send({
-    from: "onboarding@resend.dev", // use this for testing
+  return resend.emails.send({
+    from: "onboarding@resend.dev", // testing sender
     to: email,
     subject: "Verify your email",
     html: `

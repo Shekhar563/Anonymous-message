@@ -5,11 +5,13 @@ import UserModel from "@/model/User";
 import sendVerificationEmail from "@/helpers/sendVerificationEmail";
 
 export async function POST(req: Request) {
+    console.log("Signup request received");
   try {
     await dbConnect();
 
     const { username, email, password } = await req.json();
 
+    // 1️⃣ Check username
     const userByUsername = await UserModel.findOne({ username });
     if (userByUsername) {
       return NextResponse.json(
@@ -18,6 +20,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // 2️⃣ Check email
     const userByEmail = await UserModel.findOne({ email });
     if (userByEmail) {
       return NextResponse.json(
@@ -26,11 +29,14 @@ export async function POST(req: Request) {
       );
     }
 
+    // 3️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // 4️⃣ Generate verification code
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verifyCodeExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
+    // 5️⃣ Create user
     await UserModel.create({
       username,
       email,
@@ -42,19 +48,23 @@ export async function POST(req: Request) {
       messages: [],
     });
 
+    // 6️⃣ SEND EMAIL  ← THIS IS WHERE IT GOES
     const emailRes = await sendVerificationEmail(email, username, verifyCode);
 
-    if (!emailRes?.success) {
+    // 7️⃣ Check email result
+    if (!emailRes.data) {
       return NextResponse.json(
-        { success: false, message: emailRes?.message || "Email failed" },
+        { success: false, message: emailRes.error || "Failed to send verification email" },
         { status: 500 }
       );
     }
 
+    // 8️⃣ Final success response
     return NextResponse.json(
       { success: true, message: "Signup successful. Verify your email." },
       { status: 201 }
     );
+
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: err.message || "Something went wrong" },
