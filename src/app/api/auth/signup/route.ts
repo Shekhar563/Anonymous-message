@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import dbConnect from "@src/lib/dbConnect";
-import UserModel from "@/model/User";
-import { sendVerificationEmail } from "@/helpers/sendVerificationEmail";
+import dbConnect from "@/src/lib/dbConnect";
+import UserModel from "@/src/model/User";
+import sendVerificationEmail  from "@/src/helpers/sendVerificationEmail";
 
 export async function POST(req: Request) {
   try {
